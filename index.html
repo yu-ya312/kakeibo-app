@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smart Receipt - プレミアム家計簿アプリ</title>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+JP:wght@400;500;700&display=swap" rel="stylesheet">
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="style.css?v=15">
+</head>
+<body>
+    <div class="app-container">
+        <!-- Mobile Hamburger -->
+        <button class="mobile-menu-btn" id="mobile-menu-btn" aria-label="メニューを開く">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" style="width:24px;height:24px;"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>
+        </button>
+        <!-- Mobile Overlay -->
+        <div class="sidebar-overlay" id="sidebar-overlay"></div>
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="logo">
+                <h2>Smart Receipt</h2>
+            </div>
+            <nav>
+                <ul id="nav-menu">
+                    <li class="active" data-target="dashboard">
+                        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"></path></svg>
+                        ダッシュボード
+                    </li>
+                    <li data-target="transactions">
+                        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16"></path></svg>
+                        取引一覧
+                    </li>
+                </ul>
+            </nav>
+            <div class="sidebar-footer">
+                <button id="reset-btn" class="btn-secondary hidden" style="display: flex; align-items: center; justify-content: center; gap: 0.5rem;">
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" style="width: 18px; height: 18px;"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+                    レシートを追加読込
+                </button>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <header>
+                <h1 style="display: flex; align-items: center;"><span id="page-title">家計簿ダッシュボード</span>
+                    <select id="month-select" class="select-box hidden" style="margin-left: 15px; font-size: 1.1rem; font-weight: 700; padding: 0.2rem 1rem; border-color: rgba(0,0,0,0.1); background-color: rgba(255,255,255,0.5); border-radius: 8px; cursor: pointer; color: var(--text-main); outline: none;">
+                    </select>
+                </h1>
+                <div class="header-actions">
+                    <label for="encoding-select">文字コード:</label>
+                    <select id="encoding-select" class="select-box">
+                        <option value="utf-8">UTF-8 (標準)</option>
+                        <option value="Shift_JIS">Shift-JIS (Excel等)</option>
+                    </select>
+                </div>
+            </header>
+
+            <!-- Upload Section -->
+            <section class="view-section active-view" id="upload-view">
+                <div class="upload-area" id="drop-zone">
+                    <input type="file" id="file-input" accept=".csv" hidden>
+                    <svg class="upload-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path></svg>
+                    <h2>レシートCSVをアップロード</h2>
+                    <p>ファイルをここにドラッグ＆ドロップ、またはクリックして選択</p>
+                    <button class="btn-primary" onclick="document.getElementById('file-input').click()">ファイルを選択</button>
+                </div>
+            </section>
+
+            <!-- Dashboard View -->
+            <section class="view-section hidden" id="dashboard-view">
+                <!-- Stats & Fixed Expenses -->
+                <div class="dashboard-top-grid" style="display: grid; grid-template-columns: 1fr 1.5fr; gap: 1.5rem; margin-bottom: 2rem;">
+                    <!-- Left: Gross Expense -->
+                    <div class="stat-card" style="margin-bottom: 0; min-height: 100%;">
+                        <div class="stat-icon bg-indigo">¥</div>
+                        <div class="stat-info">
+                            <h3>総支出 (変動費＋固定費)</h3>
+                            <p class="stat-value" id="gross-expense" style="font-size: 2.2rem;">¥0</p>
+                        </div>
+                    </div>
+
+                    <!-- Right: Fixed Expenses -->
+                    <div class="fixed-expenses-card" style="background: var(--bg-card); backdrop-filter: blur(10px); border: 1px solid var(--glass-border); border-radius: var(--radius); padding: 1.2rem 1.5rem; box-shadow: var(--shadow-sm);">
+                        <h3 style="font-size: 1rem; margin-bottom: 0.8rem; color: #1e293b; font-weight: 600;">
+                            固定費の入力
+                        </h3>
+                        <div class="fixed-inputs-grid" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.8rem;">
+                            <div class="input-group">
+                                <label style="display: block; font-size: 0.75rem; color: var(--text-muted); margin-bottom: 0.2rem;">電気代</label>
+                                <input type="number" class="fixed-expense-input" data-key="電気代" style="width: 100%; border: 1px solid var(--border); border-radius: 6px; padding: 0.4rem; outline: none; background: rgba(255,255,255,0.8); transition: border-color 0.2s;" placeholder="0">
+                            </div>
+                            <div class="input-group">
+                                <label style="display: block; font-size: 0.75rem; color: var(--text-muted); margin-bottom: 0.2rem;">ガソリン代①</label>
+                                <input type="number" class="fixed-expense-input" data-key="ガソリン代1" style="width: 100%; border: 1px solid var(--border); border-radius: 6px; padding: 0.4rem; outline: none; background: rgba(255,255,255,0.8); transition: border-color 0.2s;" placeholder="0">
+                            </div>
+                            <div class="input-group">
+                                <label style="display: block; font-size: 0.75rem; color: var(--text-muted); margin-bottom: 0.2rem;">ガソリン代②</label>
+                                <input type="number" class="fixed-expense-input" data-key="ガソリン代2" style="width: 100%; border: 1px solid var(--border); border-radius: 6px; padding: 0.4rem; outline: none; background: rgba(255,255,255,0.8); transition: border-color 0.2s;" placeholder="0">
+                            </div>
+                            <div class="input-group">
+                                <label style="display: block; font-size: 0.75rem; color: var(--text-muted); margin-bottom: 0.2rem;">住宅ローン</label>
+                                <input type="number" class="fixed-expense-input" data-key="住宅ローン" style="width: 100%; border: 1px solid var(--border); border-radius: 6px; padding: 0.4rem; outline: none; background: rgba(255,255,255,0.8); transition: border-color 0.2s;" placeholder="0">
+                            </div>
+                            <div class="input-group">
+                                <label style="display: block; font-size: 0.75rem; color: var(--text-muted); margin-bottom: 0.2rem;">太陽光代</label>
+                                <input type="number" class="fixed-expense-input" data-key="太陽光代" style="width: 100%; border: 1px solid var(--border); border-radius: 6px; padding: 0.4rem; outline: none; background: rgba(255,255,255,0.8); transition: border-color 0.2s;" placeholder="0">
+                            </div>
+                            <div class="input-group">
+                                <label style="display: block; font-size: 0.75rem; color: var(--text-muted); margin-bottom: 0.2rem;">カーポート代</label>
+                                <input type="number" class="fixed-expense-input" data-key="カーポート代" style="width: 100%; border: 1px solid var(--border); border-radius: 6px; padding: 0.4rem; outline: none; background: rgba(255,255,255,0.8); transition: border-color 0.2s;" placeholder="0">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Charts -->
+                <div class="charts-grid" style="grid-template-columns: 1fr 2.5fr;">
+                    <div class="chart-card">
+                        <h3>カテゴリ別割合 (固定費含む)</h3>
+                        <div class="canvas-wrapper">
+                            <canvas id="categoryChart"></canvas>
+                        </div>
+                    </div>
+                    <div class="chart-card block-chart">
+                        <h3>過去6ヶ月の支出推移 (月別)</h3>
+                        <div class="canvas-wrapper">
+                            <canvas id="expenseChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Transactions View -->
+            <section class="view-section hidden" id="transactions-view">
+                <div class="table-card">
+                    <div class="table-header">
+                        <div class="search-box">
+                            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+                            <input type="text" id="search-input" placeholder="商品名やカテゴリで絞り込み...">
+                        </div>
+                        <div style="display: flex; align-items: center; gap: 1rem;">
+                            <div style="font-weight: 700; font-size: 1.1rem; color: var(--text-main);">一覧合計: <span id="list-total-amount" style="color: var(--primary);">¥0</span></div>
+                            <span id="transaction-count-badge" class="badge">0件</span>
+                        </div>
+                    </div>
+                    <div class="table-wrapper">
+                        <table id="data-table">
+                            <thead>
+                                <tr>
+                                    <th data-sort="date" style="width: 120px;">日付 <span class="sort-icon"></span></th>
+                                    <th data-sort="category" style="width: 140px;">カテゴリ <span class="sort-icon"></span></th>
+                                    <th data-sort="name">商品名 <span class="sort-icon"></span></th>
+                                    <th data-sort="quantity" class="text-right" style="width: 80px;">数量 <span class="sort-icon"></span></th>
+                                    <th data-sort="amount" class="text-right" style="width: 120px;">金額 <span class="sort-icon"></span></th>
+                                    <th class="text-center" style="width: 60px;">操作</th>
+                                </tr>
+                            </thead>
+                            <tbody id="table-body">
+                                <!-- Data will be inserted here -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+    <script src="script.js?v=15"></script>
+    <script>
+        // Mobile menu toggle
+        const menuBtn = document.getElementById('mobile-menu-btn');
+        const sidebar = document.querySelector('.sidebar');
+        const overlay = document.getElementById('sidebar-overlay');
+        function toggleSidebar() {
+            sidebar.classList.toggle('open');
+            overlay.classList.toggle('open');
+        }
+        menuBtn.addEventListener('click', toggleSidebar);
+        overlay.addEventListener('click', toggleSidebar);
+        // Close sidebar when nav item clicked on mobile
+        document.querySelectorAll('#nav-menu li').forEach(item => {
+            item.addEventListener('click', () => {
+                if(window.innerWidth <= 768) {
+                    sidebar.classList.remove('open');
+                    overlay.classList.remove('open');
+                }
+            });
+        });
+    </script>
+</body>
+</html>

@@ -64,7 +64,7 @@ document.addEventListener('DOMContentLoaded', () => {
             else item.classList.remove('active');
         });
         
-        if(target === 'dashboard') pageTitle.textContent = '家計簿ダッシュボード';
+        if(target === 'dashboard') pageTitle.textContent = '支出分析ダッシュボード';
         if(target === 'transactions') pageTitle.textContent = '取引一覧';
     }
 
@@ -93,18 +93,27 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     function handleFile(file) {
-        if (!file.name.toLowerCase().endsWith('.csv')) {
-            alert('CSVファイルを選択してください。');
+        const name = file.name.toLowerCase();
+        if (!name.endsWith('.csv') && !name.endsWith('.txt') && !name.endsWith('.text')) {
+            alert('❗ ファイル形式エラー\n\nCSVまたはテキストファイル（.csv / .txt）を選択してください。\n対応していないファイル形式です。');
+            return;
+        }
+
+        if (file.size === 0) {
+            alert('❗ 空ファイルエラー\n\n選択されたファイルは空です。\nデータが入ったCSVまたはテキストファイルを選び直してください。');
             return;
         }
 
         const reader = new FileReader();
         const encoding = encodingSelect.value;
         reader.onload = (e) => {
-            const csvText = e.target.result;
-            parseAndProcessData(csvText);
+            const text = e.target.result;
+            if (!text || text.trim().length === 0) {
+                alert('❗ 空ファイルエラー\n\nファイルの中身が空です。\nデータが入ったファイルを選び直してください。');
+                return;
+            }
+            parseAndProcessData(text);
         };
-        // Use browser-native text reading which covers Shift-JIS properly without relying on TextDecoder quirks
         reader.readAsText(file, encoding);
     }
 
@@ -163,7 +172,17 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- Core Processing ---
     function parseAndProcessData(csvText) {
         const lines = csvText.split(/\r?\n/).filter(line => line.trim() !== '');
-        if (lines.length === 0) return;
+        if (lines.length === 0) {
+            alert('❗ データなしエラー\n\nファイルにデータ行が見つかりませんでした。\n「日付, 時刻, 商品名, 金額」の形式で記載されたCSVまたはテキストファイルをお使いください。');
+            return;
+        }
+
+        // Check if first data line has at least 2 comma-separated columns
+        const testLine = parseCSVLine(lines[lines.length > 1 ? 1 : 0]);
+        if (testLine.length < 2) {
+            alert('❗ フォーマットエラー\n\nファイルの形式が正しくありません。\n各行がカンマ区切り（CSV形式）になっているか確認してください。\n\n例: 2026/03/01,12:00,商品名,500');
+            return;
+        }
 
         const header = parseCSVLine(lines[0]);
         let dateIdx = 0, timeIdx = 1, nameIdx = 2, amountIdx = 3, qtIdx = 4;

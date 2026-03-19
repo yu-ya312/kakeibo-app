@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Smart Receipt - プレミアム家計簿アプリ</title>
+    <title>支出を可視化するCSV、テキスト家計簿分析アプリ</title>
     <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+JP:wght@400;500;700&display=swap" rel="stylesheet">
     <!-- Chart.js -->
@@ -21,7 +21,7 @@
         <!-- Sidebar -->
         <aside class="sidebar">
             <div class="logo">
-                <h2>Smart Receipt</h2>
+                <h2>支出分析アプリ</h2>
             </div>
             <nav>
                 <ul id="nav-menu">
@@ -62,10 +62,10 @@
             <!-- Upload Section -->
             <section class="view-section active-view" id="upload-view">
                 <div class="upload-area" id="drop-zone">
-                    <input type="file" id="file-input" accept=".csv" hidden>
+                    <input type="file" id="file-input" accept=".csv,.txt,.text" hidden>
                     <svg class="upload-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path></svg>
-                    <h2>レシートCSVをアップロード</h2>
-                    <p>ファイルをここにドラッグ＆ドロップ、またはクリックして選択</p>
+                    <h2>このアプリはCSV、テキストを読み込んで支出を分析できます</h2>
+                    <p>まずはCSVまたはテキストファイルを選択してください。<br>ドラッグ＆ドロップ、または下のボタンから選択できます。</p>
                     <button class="btn-primary" onclick="document.getElementById('file-input').click()">ファイルを選択</button>
                 </div>
             </section>
@@ -168,7 +168,7 @@
             </section>
         </main>
     </div>
-    <script src="script.js?v=15"></script>
+    <script src="script.js?v=16"></script>
     <script>
         // Mobile menu toggle
         const menuBtn = document.getElementById('mobile-menu-btn');

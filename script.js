@@ -46,13 +46,77 @@ document.addEventListener('DOMContentLoaded', () => {
             populateMonthSelect();
             monthSelectEl.classList.remove('hidden');
             if (monthSelectEl.options.length > 0) {
-                monthSelectEl.selectedIndex = 0; // Load newest month
+                monthSelectEl.selectedIndex = 0;
             }
             renderCurrentMonth();
             switchView('dashboard');
             resetBtn.classList.remove('hidden');
+            document.getElementById('export-btn').classList.remove('hidden');
         }
     }
+
+    // --- Export / Import ---
+    const exportBtn = document.getElementById('export-btn');
+    const importBtn = document.getElementById('import-btn');
+    const importFileInput = document.getElementById('import-file-input');
+
+    exportBtn.addEventListener('click', () => {
+        const data = {
+            globalData: globalData,
+            fixedData: fixedData,
+            exportedAt: new Date().toISOString()
+        };
+        const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        const now = new Date();
+        const stamp = `${now.getFullYear()}${(now.getMonth()+1).toString().padStart(2,'0')}${now.getDate().toString().padStart(2,'0')}`;
+        a.download = `家計簿データ_${stamp}.json`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        alert('✅ データをエクスポートしました！\n\nこのファイルをスマホに送り、「データを復元（インポート）」ボタンから読み込むと同じデータが使えます。');
+    });
+
+    importBtn.addEventListener('click', () => {
+        importFileInput.click();
+    });
+
+    importFileInput.addEventListener('change', (e) => {
+        if (!e.target.files.length) return;
+        const file = e.target.files[0];
+        const reader = new FileReader();
+        reader.onload = (ev) => {
+            try {
+                const imported = JSON.parse(ev.target.result);
+                if (!imported.globalData || !Array.isArray(imported.globalData)) {
+                    alert('❗ インポートエラー\n\nこのファイルは家計簿データではありません。\n「データを保存（エクスポート）」で作成したJSONファイルを選択してください。');
+                    return;
+                }
+                if (confirm(`📥 データを復元しますか？\n\n取引データ: ${imported.globalData.length}件\n保存日時: ${imported.exportedAt || '不明'}\n\n※現在のデータは上書きされます。`)) {
+                    globalData = imported.globalData;
+                    fixedData = imported.fixedData || {};
+                    saveData();
+                    populateMonthSelect();
+                    monthSelectEl.classList.remove('hidden');
+                    if (monthSelectEl.options.length > 0) {
+                        monthSelectEl.selectedIndex = 0;
+                    }
+                    renderCurrentMonth();
+                    switchView('dashboard');
+                    resetBtn.classList.remove('hidden');
+                    exportBtn.classList.remove('hidden');
+                    alert('✅ データの復元が完了しました！');
+                }
+            } catch (err) {
+                alert('❗ 読み込みエラー\n\nファイルの解析に失敗しました。\n正しいJSONファイルを選択してください。');
+            }
+        };
+        reader.readAsText(file);
+        importFileInput.value = ''; // reset
+    });
 
     // --- Navigation & Views ---
     function switchView(target) {
@@ -90,6 +154,23 @@ document.addEventListener('DOMContentLoaded', () => {
     });
     fileInput.addEventListener('change', e => {
         if (e.target.files.length) handleFile(e.target.files[0]);
+    });
+
+    // --- Paste Text Input ---
+    const pasteInput = document.getElementById('paste-input');
+    const pasteSubmitBtn = document.getElementById('paste-submit-btn');
+
+    // Prevent clicks inside paste area from triggering drop-zone file dialog
+    pasteInput.addEventListener('click', (e) => e.stopPropagation());
+    pasteSubmitBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const text = pasteInput.value;
+        if (!text || text.trim().length === 0) {
+            alert('❗ テキストが空です\n\n入力欄にカンマ区切りのテキストを貼り付けてから「読み込む」ボタンを押してください。\n\n例:\n2026/03/01,12:00,牛乳,198');
+            return;
+        }
+        parseAndProcessData(text);
+        pasteInput.value = '';
     });
 
     function handleFile(file) {
@@ -258,6 +339,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         switchView('dashboard');
         resetBtn.classList.remove('hidden');
+        exportBtn.classList.remove('hidden');
         saveData();
     }
 
